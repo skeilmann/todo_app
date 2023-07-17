@@ -1,4 +1,7 @@
 (function () {
+    let taskId = 0;
+    let tasks = [];
+
     function createAppTitle(title) {
         let appTitle = document.createElement('h2');
         appTitle.innerHTML = title;
@@ -35,7 +38,13 @@
         return list;
     }
 
-    function createTodoItem(name) {
+    function createTodoItem(id, name) {
+        let task = {
+            id: id,
+            taskName: name,
+            done: false,
+        }
+
         let item = document.createElement('li');
         // put button in element that will show them in nice way
         let buttonGroup = document.createElement('div');
@@ -46,7 +55,7 @@
         //create styles for list elements, and put buttons to the right side using flex
         item.classList.add('list-group-item', 'd-flex', 'justify-content-between', 'align-items-center');
         // add task name as text, that is equal to input value (later we will define this in function argument)
-        item.textContent = name;
+        item.textContent = task.taskName;
 
         buttonGroup.classList.add('btn-group', 'btn-group-sm');
         doneButton.classList.add('btn', 'btn-success');
@@ -63,6 +72,7 @@
             item,
             doneButton,
             deleteButton,
+            task
         };
     }
 
@@ -84,18 +94,24 @@
             if (!todoItemForm.input.value) {
                 return;
             }
+
+            taskId++;
             // create new task with name of input value
-            let todoItem = createTodoItem(todoItemForm.input.value);
+            let todoItem = createTodoItem(taskId, todoItemForm.input.value);
 
             //add event listner for buttons
             todoItem.doneButton.addEventListener('click', function () {
                 todoItem.item.classList.toggle('list-group-item-success');
+                todoItem.task.done = !todoItem.task.done; // Toggle the 'done' state
             });
+
             todoItem.deleteButton.addEventListener('click', function () {
                 if (confirm('Are yu sure?')) {
                     todoItem.item.remove();
                 }
             });
+
+            tasks.push(todoItem.task); // Store the task object
 
             //create and add new task with the name of input value 
             todoList.append(todoItem.item);
@@ -105,7 +121,12 @@
         });
     }
 
-    window.createTodoApp = createTodoApp;
+    // small fucntion to display all task as aray when later call the function
+    function viewAllTasks() {
+        console.log(tasks);
+    }
 
+    window.createTodoApp = createTodoApp;
+    window.viewAllTasks = viewAllTasks;
 })();
 
