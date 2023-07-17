@@ -35,7 +35,6 @@
         return list;
     }
 
-
     function createTodoItem(name) {
         let item = document.createElement('li');
         // put button in element that will show them in nice way
@@ -46,9 +45,10 @@
 
         //create styles for list elements, and put buttons to the right side using flex
         item.classList.add('list-group-item', 'd-flex', 'justify-content-between', 'align-items-center');
+        // add task name as text, that is equal to input value (later we will define this in function argument)
         item.textContent = name;
 
-        buttonGroup.classList.add('btn-group', 'brn-group-sm');
+        buttonGroup.classList.add('btn-group', 'btn-group-sm');
         doneButton.classList.add('btn', 'btn-success');
         doneButton.textContent = 'Done';
         deleteButton.classList.add('btn', 'btn-danger');
