@@ -20,6 +20,7 @@
         buttonWrapper.classList.add('input-group-append');
         button.classList.add('btn', 'btn-primary');
         button.textContent = 'Add task';
+        button.setAttribute('disabled', 'disabled');
 
         buttonWrapper.append(button);
         form.append(input);
@@ -86,6 +87,13 @@
         container.append(todoItemForm.form);
         container.append(todoList);
 
+        // toggle enable or disabled state for from button
+        function toggleFormButton() {
+            todoItemForm.button.disabled = todoItemForm.input.value === '';
+        };
+        toggleFormButton();
+        todoItemForm.input.addEventListener('input', toggleFormButton);
+
 
         todoItemForm.form.addEventListener('submit', function (e) {
             e.preventDefault();
@@ -96,6 +104,7 @@
             }
 
             taskId++;
+            viewAllTasks();
             // create new task with name of input value
             let todoItem = createTodoItem(taskId, todoItemForm.input.value);
 
@@ -103,21 +112,27 @@
             todoItem.doneButton.addEventListener('click', function () {
                 todoItem.item.classList.toggle('list-group-item-success');
                 todoItem.task.done = !todoItem.task.done; // Toggle the 'done' state
+                viewAllTasks();
             });
 
             todoItem.deleteButton.addEventListener('click', function () {
                 if (confirm('Are yu sure?')) {
                     todoItem.item.remove();
+                    const index = tasks.findIndex(task => task.id === todoItem.task.id);
+                    tasks.splice(index, 1);
+                    viewAllTasks();
                 }
             });
 
             tasks.push(todoItem.task); // Store the task object
 
-            //create and add new task with the name of input value 
-            todoList.append(todoItem.item);
 
-            //clear the input value
-            todoItemForm.input.value = '';
+            todoList.append(todoItem.item); // add new task with the name of input value 
+
+
+            todoItemForm.input.value = ''; // clear the input value
+
+            toggleFormButton();//disable the button
         });
     }
 
