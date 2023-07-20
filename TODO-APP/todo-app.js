@@ -1,6 +1,7 @@
 (function () {
     let taskId = 0;
     let tasks = [];
+    let storage = window.localStorage;
 
     function createAppTitle(title) {
         let appTitle = document.createElement('h2');
@@ -77,7 +78,8 @@
         };
     }
 
-    function createTodoApp(container, title = 'List of tasks') {
+
+    function createTodoApp(container, title = 'List of tasks', listName) {
 
         let todoAppTitle = createAppTitle(title);
         let todoItemForm = createTodoItemForm();
@@ -87,13 +89,81 @@
         container.append(todoItemForm.form);
         container.append(todoList);
 
+        function storageAvailable(type) {
+            try {
+                var storage = window[type],
+                    x = '__storage_test__';
+                storage.setItem(x, x);
+                storage.removeItem(x);
+                return true;
+            }
+            catch (e) {
+                return false;
+            }
+        }
+
+        function getLocalStorageKey() {
+            return 'tasks_' + listName;
+        }
+
+        function addToLocalStorage(task) {
+            if (storageAvailable('localStorage')) {
+                console.log('Yippee! We can use localStorage awesomeness');
+                let tasksString = localStorage.getItem(getLocalStorageKey());
+                let tasksArray = tasksString ? JSON.parse(tasksString) : [];
+                tasksArray.push(task);
+                localStorage.setItem(getLocalStorageKey(), JSON.stringify(tasksArray));
+            }
+            else {
+                console.log('Too bad, no localStorage for us');
+            }
+        }
+
+        function retrieveFromLocalSorage() {
+            if (storageAvailable('localStorage')) {
+                let tasksString = localStorage.getItem(getLocalStorageKey());
+                tasks = tasksString ? JSON.parse(tasksString) : [];
+                taskId = tasks.length;
+            } else {
+                console.log('Too bad, no localStorage for us');
+            }
+        }
+
         // toggle enable or disabled state for from button
         function toggleFormButton() {
             todoItemForm.button.disabled = todoItemForm.input.value === '';
         };
         toggleFormButton();
         todoItemForm.input.addEventListener('input', toggleFormButton);
+        retrieveFromLocalSorage(); // do i really need this?
 
+
+        // function that add to page list of tasks from local storage
+        function populateTodoList() {
+            todoList.innerHTML = ''; // Clear the list to avoid duplicates
+
+            tasks.forEach(task => {
+                let todoItem = createTodoItem(task.id, task.taskName);
+
+                todoItem.doneButton.addEventListener('click', function () {
+                    todoItem.item.classList.toggle('list-group-item-success'); // toggle the class that color the itme in green
+                    task.done = !task.done; // Toggle the 'done' state of tasks in array
+                    addToLocalStorage(); // Update local storage when 'Done' button is clicked
+                });
+
+                todoItem.deleteButton.addEventListener('click', function () {
+                    if (confirm('Are you sure?')) {
+                        todoItem.item.remove();
+                        const index = tasks.findIndex(t => t.id === task.id);
+                        tasks.splice(index, 1);
+                        localStorage.setItem('tasks', JSON.stringify(tasks)); // Update local storage
+                        viewAllTasks();
+                    }
+                });
+
+                todoList.append(todoItem.item);
+            });
+        }
 
         todoItemForm.form.addEventListener('submit', function (e) {
             e.preventDefault();
@@ -107,12 +177,14 @@
             viewAllTasks();
             // create new task with name of input value
             let todoItem = createTodoItem(taskId, todoItemForm.input.value);
+            addToLocalStorage(todoItem.task); // Store task in local storage
 
             //add event listner for buttons
             todoItem.doneButton.addEventListener('click', function () {
                 todoItem.item.classList.toggle('list-group-item-success');
                 todoItem.task.done = !todoItem.task.done; // Toggle the 'done' state
                 viewAllTasks();
+                addToLocalStorage(todoItem.task); // Store task in local storage
             });
 
             todoItem.deleteButton.addEventListener('click', function () {
@@ -120,6 +192,7 @@
                     todoItem.item.remove();
                     const index = tasks.findIndex(task => task.id === todoItem.task.id);
                     tasks.splice(index, 1);
+                    localStorage.setItem(getLocalStorageKey(), JSON.stringify(tasks)); // Update local storage
                     viewAllTasks();
                 }
             });
@@ -134,7 +207,11 @@
 
             toggleFormButton();//disable the button
         });
+        populateTodoList();
+
     }
+
+
 
     // small fucntion to display all task as aray when later call the function
     function viewAllTasks() {
