@@ -129,10 +129,22 @@
             }
         }
 
+        function removeFromLocalStorage(taskId) {
+            if (storageAvailable('localStorage')) {
+                let tasksString = localStorage.getItem(getLocalStorageKey());
+                let tasksArray = tasksString ? JSON.parse(tasksString) : [];
+                tasksArray = tasksArray.filter(task => task.id !== taskId);
+                localStorage.setItem(getLocalStorageKey(), JSON.stringify(tasksArray));
+            } else {
+                console.log('Too bad, no localStorage for us');
+            }
+        }
+
         // toggle enable or disabled state for from button
         function toggleFormButton() {
             todoItemForm.button.disabled = todoItemForm.input.value === '';
         };
+
         toggleFormButton();
         todoItemForm.input.addEventListener('input', toggleFormButton);
         retrieveFromLocalSorage(); // do i really need this?
@@ -156,7 +168,7 @@
                         todoItem.item.remove();
                         const index = tasks.findIndex(t => t.id === task.id);
                         tasks.splice(index, 1);
-                        localStorage.setItem('tasks', JSON.stringify(tasks)); // Update local storage
+                        removeFromLocalStorage(todoItem.task.id); // Update local storage
                         viewAllTasks();
                     }
                 });
@@ -192,7 +204,7 @@
                     todoItem.item.remove();
                     const index = tasks.findIndex(task => task.id === todoItem.task.id);
                     tasks.splice(index, 1);
-                    localStorage.setItem(getLocalStorageKey(), JSON.stringify(tasks)); // Update local storage
+                    removeFromLocalStorage(todoItem.task.id); // Update local storage
                     viewAllTasks();
                 }
             });
