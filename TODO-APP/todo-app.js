@@ -1,7 +1,6 @@
 (function () {
     let taskId = 0;
     let tasks = [];
-    let storage = window.localStorage;
 
     function createAppTitle(title) {
         let appTitle = document.createElement('h2');
@@ -40,11 +39,17 @@
         return list;
     }
 
-    function createTodoItem(id, name) {
+    function findBiggestNumber(arr) {
+        let maxId = arr.reduce((max, item) => (item.id > max ? item.id : max), 0);
+        taskId = maxId + 1;
+        return taskId;
+    }
+
+    function createTodoItem(arr, name, done = false) {
         let task = {
-            id: id,
+            id: findBiggestNumber(arr),
             taskName: name,
-            done: false,
+            done: done,
         }
 
         let item = document.createElement('li');
@@ -78,7 +83,6 @@
         };
     }
 
-
     function createTodoApp(container, title = 'List of tasks', listName) {
 
         let todoAppTitle = createAppTitle(title);
@@ -89,57 +93,6 @@
         container.append(todoItemForm.form);
         container.append(todoList);
 
-        function storageAvailable(type) {
-            try {
-                var storage = window[type],
-                    x = '__storage_test__';
-                storage.setItem(x, x);
-                storage.removeItem(x);
-                return true;
-            }
-            catch (e) {
-                return false;
-            }
-        }
-
-        function getLocalStorageKey() {
-            return 'tasks_' + listName;
-        }
-
-        function addToLocalStorage(task) {
-            if (storageAvailable('localStorage')) {
-                console.log('Yippee! We can use localStorage awesomeness');
-                let tasksString = localStorage.getItem(getLocalStorageKey());
-                let tasksArray = tasksString ? JSON.parse(tasksString) : [];
-                tasksArray.push(task);
-                localStorage.setItem(getLocalStorageKey(), JSON.stringify(tasksArray));
-            }
-            else {
-                console.log('Too bad, no localStorage for us');
-            }
-        }
-
-        function retrieveFromLocalSorage() {
-            if (storageAvailable('localStorage')) {
-                let tasksString = localStorage.getItem(getLocalStorageKey());
-                tasks = tasksString ? JSON.parse(tasksString) : [];
-                taskId = tasks.length;
-            } else {
-                console.log('Too bad, no localStorage for us');
-            }
-        }
-
-        function removeFromLocalStorage(taskId) {
-            if (storageAvailable('localStorage')) {
-                let tasksString = localStorage.getItem(getLocalStorageKey());
-                let tasksArray = tasksString ? JSON.parse(tasksString) : [];
-                tasksArray = tasksArray.filter(task => task.id !== taskId);
-                localStorage.setItem(getLocalStorageKey(), JSON.stringify(tasksArray));
-            } else {
-                console.log('Too bad, no localStorage for us');
-            }
-        }
-
         // toggle enable or disabled state for from button
         function toggleFormButton() {
             todoItemForm.button.disabled = todoItemForm.input.value === '';
@@ -147,34 +100,15 @@
 
         toggleFormButton();
         todoItemForm.input.addEventListener('input', toggleFormButton);
-        retrieveFromLocalSorage(); // do i really need this?
 
+        function toLocalStorage() {
+            let tasksSerialized = JSON.stringify(tasks);
+            localStorage.setItem(listName, tasksSerialized);
+        }
 
-        // function that add to page list of tasks from local storage
-        function populateTodoList() {
-            todoList.innerHTML = ''; // Clear the list to avoid duplicates
-
-            tasks.forEach(task => {
-                let todoItem = createTodoItem(task.id, task.taskName);
-
-                todoItem.doneButton.addEventListener('click', function () {
-                    todoItem.item.classList.toggle('list-group-item-success'); // toggle the class that color the itme in green
-                    task.done = !task.done; // Toggle the 'done' state of tasks in array
-                    addToLocalStorage(); // Update local storage when 'Done' button is clicked
-                });
-
-                todoItem.deleteButton.addEventListener('click', function () {
-                    if (confirm('Are you sure?')) {
-                        todoItem.item.remove();
-                        const index = tasks.findIndex(t => t.id === task.id);
-                        tasks.splice(index, 1);
-                        removeFromLocalStorage(todoItem.task.id); // Update local storage
-                        viewAllTasks();
-                    }
-                });
-
-                todoList.append(todoItem.item);
-            });
+        function retrieveFromLocalStorage() {
+            let tasksString = localStorage.getItem(listName);
+            tasks = tasksString ? JSON.parse(tasksString) : [];
         }
 
         todoItemForm.form.addEventListener('submit', function (e) {
@@ -185,27 +119,25 @@
                 return;
             }
 
-            taskId++;
-            viewAllTasks();
             // create new task with name of input value
-            let todoItem = createTodoItem(taskId, todoItemForm.input.value);
-            addToLocalStorage(todoItem.task); // Store task in local storage
+            let todoItem = createTodoItem(tasks, todoItemForm.input.value);
+            viewAllTasks();
 
             //add event listner for buttons
             todoItem.doneButton.addEventListener('click', function () {
                 todoItem.item.classList.toggle('list-group-item-success');
-                todoItem.task.done = !todoItem.task.done; // Toggle the 'done' state
+                todoItem.task.done = !todoItem.task.done; // Toggle the 'done' state in the tasks array
+                toLocalStorage(); // Save the updated tasks array to local storage;
                 viewAllTasks();
-                addToLocalStorage(todoItem.task); // Store task in local storage
             });
 
             todoItem.deleteButton.addEventListener('click', function () {
-                if (confirm('Are yu sure?')) {
+                if (confirm('Are you sure?')) {
                     todoItem.item.remove();
-                    const index = tasks.findIndex(task => task.id === todoItem.task.id);
-                    tasks.splice(index, 1);
-                    removeFromLocalStorage(todoItem.task.id); // Update local storage
+                    let indexOfDeleted = tasks.findIndex(t => t.id === todoItem.task.id);
+                    tasks.splice(indexOfDeleted, 1);
                     viewAllTasks();
+                    toLocalStorage();
                 }
             });
 
@@ -218,19 +150,57 @@
             todoItemForm.input.value = ''; // clear the input value
 
             toggleFormButton();//disable the button
+            toLocalStorage();
         });
-        populateTodoList();
 
+        // recreate each task that is stored in local storage
+        function addTaskToList(task) {
+            let todoItem = createTodoItem(tasks, task.taskName, task.done);
+            if (task.done === true) {
+                todoItem.item.classList.add('list-group-item-success');
+            } else {
+                todoItem.item.classList.remove('list-group-item-success');
+            }
+
+            function updateTaskDoneStatus() {
+                todoItem.item.classList.toggle('list-group-item-success');
+                todoItem.task.done = !todoItem.task.done; // Toggle the 'done' state in the tasks array
+                toLocalStorage(); // Save the updated tasks array to local storage
+                viewAllTasks();
+            }
+
+            todoItem.doneButton.addEventListener('click', function () {
+                updateTaskDoneStatus(todoItem);
+            });
+
+            todoItem.deleteButton.addEventListener('click', function () {
+                if (confirm('Are you sure?')) {
+                    todoItem.item.remove();
+                    let indexOfDeleted = tasks.findIndex(t => t.id === todoItem.task.id);
+                    tasks.splice(indexOfDeleted, 1);
+                    toLocalStorage();
+                }
+            });
+            todoList.append(todoItem.item);
+        }
+
+        retrieveFromLocalStorage();
+
+        function populateList() {
+            tasks.forEach(t => {
+                addTaskToList(t);
+            });
+        }
+
+        populateList();
     }
 
-
-
-    // small fucntion to display all task as aray when later call the function
+    // small fucntion to display all tasks in array
     function viewAllTasks() {
         console.log(tasks);
-    }
+    };
+
 
     window.createTodoApp = createTodoApp;
-    window.viewAllTasks = viewAllTasks;
 })();
 
