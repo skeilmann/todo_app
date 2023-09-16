@@ -108,6 +108,15 @@
         };
     }
 
+
+    function retrieveFromLocalStorage(listName) {
+        let tasksString = localStorage.getItem(listName);
+        tasks = tasksString ? JSON.parse(tasksString) : []; //if tasksString is not an empty or falsy string, it will attempt to parse it into an array.
+        return tasks
+    }
+
+    tasks = retrieveFromLocalStorage(listName);
+
     function createTodoApp(container, title = 'List of tasks', listName) {
 
         let todoAppTitle = createAppTitle(title);
@@ -127,13 +136,6 @@
         todoItemForm.input.addEventListener('input', toggleFormButton);
 
 
-        function retrieveFromLocalStorage() {
-            let tasksString = localStorage.getItem(listName);
-            tasks = tasksString ? JSON.parse(tasksString) : []; //if tasksString is not an empty or falsy string, it will attempt to parse it into an array.
-            return tasks
-        }
-
-        tasks = retrieveFromLocalStorage();
 
         function renderAllTasks() {
             todoList.innerHTML = ''; // Clear the current todoList to prevent duplicates
