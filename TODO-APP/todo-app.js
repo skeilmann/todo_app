@@ -39,21 +39,29 @@
         return list;
     }
 
-    function findBiggestNumber(arr) {
-        let maxId = arr.reduce((max, item) => (item.id > max ? item.id : max), 0);
+    function findBiggestNumber(idArr) {
+        // The reduce method iterates through the tasks array.
+        // 'max' represents the accumulator, and 'item' is the current element in the array.
+        let maxId = idArr.reduce((max, item) => (item.id > max ? item.id : max), 0);
+        // It returns the largest id found plus 1 to ensure uniqueness for a new task.
         taskId = maxId + 1;
         return taskId;
     }
 
-    function createTodoItem(arr, name, done = false) {
+    function toLocalStorage(listName) {
+        let tasksSerialized = JSON.stringify(tasks);
+        localStorage.setItem(listName, tasksSerialized);
+    }
+
+    function createTodoItem(idArr, name, done = false) {
         let task = {
-            id: findBiggestNumber(arr),
+            id: findBiggestNumber(idArr),
             taskName: name,
             done: done,
         }
 
         let item = document.createElement('li');
-        // put button in element that will show them in nice way
+        // create elemts todo list item
         let buttonGroup = document.createElement('div');
         let doneButton = document.createElement('button');
         let deleteButton = document.createElement('button');
@@ -74,6 +82,23 @@
         buttonGroup.append(doneButton);
         buttonGroup.append(deleteButton);
         item.append(buttonGroup);
+
+        doneButton.addEventListener('click', function () {
+            item.classList.toggle('list-group-item-success');
+            task.done = !task.done; // Toggle the 'done' state in the tasks array
+            toLocalStorage(task); // Save the updated tasks array to local storage;
+            viewAllTasks();
+        });
+
+        deleteButton.addEventListener('click', function () {
+            if (confirm('Are you sure?')) {
+                item.remove();
+                let indexOfDeleted = tasks.findIndex(t => t.id === task.id);
+                tasks.splice(indexOfDeleted, 1);
+                viewAllTasks();
+                toLocalStorage();
+            }
+        });
 
         return {
             item,
@@ -101,14 +126,10 @@
         toggleFormButton();
         todoItemForm.input.addEventListener('input', toggleFormButton);
 
-        function toLocalStorage() {
-            let tasksSerialized = JSON.stringify(tasks);
-            localStorage.setItem(listName, tasksSerialized);
-        }
 
         function retrieveFromLocalStorage() {
             let tasksString = localStorage.getItem(listName);
-            tasks = tasksString ? JSON.parse(tasksString) : [];
+            tasks = tasksString ? JSON.parse(tasksString) : []; //if tasksString is not an empty or falsy string, it will attempt to parse it into an array.
             return tasks
         }
 
@@ -123,25 +144,6 @@
                 if (t.done) {
                     todoItem.item.classList.add('list-group-item-success');
                 }
-
-                //add event listner for buttons
-                todoItem.doneButton.addEventListener('click', function () {
-                    todoItem.item.classList.toggle('list-group-item-success');
-                    t.done = !t.done; // Toggle the 'done' state in the tasks array
-                    toLocalStorage(); // Save the updated tasks array to local storage;
-                    renderAllTasks();
-                    viewAllTasks();
-                });
-
-                todoItem.deleteButton.addEventListener('click', function () {
-                    if (confirm('Are you sure?')) {
-                        todoItem.item.remove();
-                        let indexOfDeleted = tasks.findIndex((task) => task.id === t.id);
-                        tasks.splice(indexOfDeleted, 1);
-                        toLocalStorage();
-                        viewAllTasks();
-                    }
-                });
             });
         }
         renderAllTasks();
@@ -160,22 +162,6 @@
             viewAllTasks();
 
             //add event listner for buttons
-            todoItem.doneButton.addEventListener('click', function () {
-                todoItem.item.classList.toggle('list-group-item-success');
-                todoItem.task.done = !todoItem.task.done; // Toggle the 'done' state in the tasks array
-                toLocalStorage(); // Save the updated tasks array to local storage;
-                viewAllTasks();
-            });
-
-            todoItem.deleteButton.addEventListener('click', function () {
-                if (confirm('Are you sure?')) {
-                    todoItem.item.remove();
-                    let indexOfDeleted = tasks.findIndex(t => t.id === todoItem.task.id);
-                    tasks.splice(indexOfDeleted, 1);
-                    viewAllTasks();
-                    toLocalStorage();
-                }
-            });
 
             tasks.push(todoItem.task); // Store the task object
 
