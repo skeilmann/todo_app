@@ -53,13 +53,7 @@
         localStorage.setItem(listName, tasksSerialized);
     }
 
-    function createTodoItem(idArr, name, done = false) {
-        let task = {
-            id: findBiggestNumber(idArr),
-            taskName: name,
-            done: done,
-        }
-
+    function createTodoItem(task, listKey) {
         let item = document.createElement('li');
         // create elemts todo list item
         let buttonGroup = document.createElement('div');
@@ -70,7 +64,7 @@
         //create styles for list elements, and put buttons to the right side using flex
         item.classList.add('list-group-item', 'd-flex', 'justify-content-between', 'align-items-center');
         // add task name as text, that is equal to input value (later we will define this in function argument)
-        item.textContent = task.taskName;
+        item.textContent = task.name;
 
         buttonGroup.classList.add('btn-group', 'btn-group-sm');
         doneButton.classList.add('btn', 'btn-success');
@@ -86,7 +80,7 @@
         doneButton.addEventListener('click', function () {
             item.classList.toggle('list-group-item-success');
             task.done = !task.done; // Toggle the 'done' state in the tasks array
-            toLocalStorage(task); // Save the updated tasks array to local storage;
+            toLocalStorage(listKey); // Save the updated tasks array to local storage;
             viewAllTasks();
         });
 
@@ -96,7 +90,7 @@
                 let indexOfDeleted = tasks.findIndex(t => t.id === task.id);
                 tasks.splice(indexOfDeleted, 1);
                 viewAllTasks();
-                toLocalStorage();
+                toLocalStorage(listKey);
             }
         });
 
@@ -107,15 +101,6 @@
             task
         };
     }
-
-
-    function retrieveFromLocalStorage(listName) {
-        let tasksString = localStorage.getItem(listName);
-        tasks = tasksString ? JSON.parse(tasksString) : []; //if tasksString is not an empty or falsy string, it will attempt to parse it into an array.
-        return tasks
-    }
-
-    tasks = retrieveFromLocalStorage(listName);
 
     function createTodoApp(container, title = 'List of tasks', listName) {
 
@@ -135,13 +120,19 @@
         toggleFormButton();
         todoItemForm.input.addEventListener('input', toggleFormButton);
 
+        function retrieveFromLocalStorage() {
+            let tasksString = localStorage.getItem(listName);
+            tasks = tasksString ? JSON.parse(tasksString) : []; //if tasksString is not an empty or falsy string, it will attempt to parse it into an array.
+            return tasks
+        }
 
+        tasks = retrieveFromLocalStorage();
 
         function renderAllTasks() {
             todoList.innerHTML = ''; // Clear the current todoList to prevent duplicates
 
             tasks.forEach((t) => {
-                let todoItem = createTodoItem(tasks, t.taskName, t.done);
+                let todoItem = createTodoItem(t, listName);
                 todoList.append(todoItem.item);
                 if (t.done) {
                     todoItem.item.classList.add('list-group-item-success');
@@ -160,7 +151,11 @@
             }
 
             // create new task with name of input value
-            let todoItem = createTodoItem(tasks, todoItemForm.input.value);
+            let todoItem = createTodoItem({
+                id: findBiggestNumber(tasks),
+                name: todoItemForm.input.value,
+                done: false,
+            }, listName);
             viewAllTasks();
 
             //add event listner for buttons
@@ -174,7 +169,7 @@
             todoItemForm.input.value = ''; // clear the input value
 
             toggleFormButton();//disable the button
-            toLocalStorage();
+            toLocalStorage(listName);
         });
     }
 
